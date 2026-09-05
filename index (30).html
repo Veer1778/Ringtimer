@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ring — interval chime</title>
+<meta name="description" content="A bell that rings on a set interval." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ground:#16211F;
+    --ground-2:#1E2C29;
+    --line:#31423E;
+    --pale:#E9EFEA;
+    --dim:#8AA09A;
+    --brass:#D3A64B;
+    --brass-soft:rgba(211,166,75,.18);
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:
+      radial-gradient(120% 80% at 50% -10%, #1F302C 0%, var(--ground) 55%) fixed;
+    color:var(--pale);
+    font-family:Inter, system-ui, sans-serif;
+    font-size:16px;
+    line-height:1.5;
+    display:flex;
+    justify-content:center;
+    padding:32px 20px 56px;
+  }
+  main{width:100%;max-width:520px}
+
+  header{display:flex;align-items:baseline;gap:12px;margin-bottom:28px}
+  h1{
+    font-family:Fraunces, Georgia, serif;
+    font-weight:300;
+    font-size:30px;
+    letter-spacing:.01em;
+    margin:0;
+  }
+  header p{margin:0;color:var(--dim);font-size:14px}
+
+  .dial{position:relative;display:grid;place-items:center;margin:0 auto 8px;width:min(320px,80vw);aspect-ratio:1}
+  .dial svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .track{fill:none;stroke:var(--line);stroke-width:2}
+  .arc{fill:none;stroke:var(--brass);stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .25s linear}
+  .pulse{fill:none;stroke:var(--brass);stroke-width:2;opacity:0}
+  .ringing .pulse{animation:out 1.6s ease-out}
+  .ringing .pulse:nth-of-type(2){animation-delay:.28s}
+  @keyframes out{
+    from{r:70px;opacity:.85}
+    to{r:150px;opacity:0}
+  }
+  .readout{position:absolute;text-align:center}
+  .readout .time{
+    font-family:Fraunces, Georgia, serif;
+    font-weight:300;
+    font-variant-numeric:tabular-nums;
+    font-size:clamp(46px,14vw,64px);
+    line-height:1;
+  }
+  .readout .state{color:var(--dim);font-size:13px;margin-top:10px;min-height:20px}
+
+  .card{
+    background:var(--ground-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-top:22px;
+  }
+  label{display:block;font-size:14px;color:var(--dim);margin-bottom:8px}
+  .row{display:flex;gap:10px;align-items:center}
+  input[type=number]{
+    width:100px;background:var(--ground);border:1px solid var(--line);color:var(--pale);
+    font:500 20px Inter,sans-serif;font-variant-numeric:tabular-nums;
+    padding:10px 12px;border-radius:10px;
+  }
+  .unit{color:var(--dim);font-size:14px}
+  .presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .chip{
+    background:transparent;border:1px solid var(--line);color:var(--pale);
+    padding:7px 13px;border-radius:999px;font:500 14px Inter,sans-serif;cursor:pointer;
+  }
+  .chip:hover{border-color:var(--brass)}
+  .chip[aria-pressed=true]{background:var(--brass-soft);border-color:var(--brass);color:var(--brass)}
+
+  .controls{display:flex;gap:10px;margin-top:22px}
+  button.primary{
+    flex:1;background:var(--brass);color:#1A1206;border:0;border-radius:12px;
+    padding:15px;font:600 16px Inter,sans-serif;cursor:pointer;
+  }
+  button.primary:hover{filter:brightness(1.07)}
+  button.ghost{
+    background:transparent;border:1px solid var(--line);color:var(--pale);
+    border-radius:12px;padding:15px 18px;font:500 15px Inter,sans-serif;cursor:pointer;
+  }
+  button.ghost:hover{border-color:var(--brass)}
+
+  .settings{display:grid;gap:16px;margin-top:22px}
+  .setting{display:flex;justify-content:space-between;align-items:center;gap:16px}
+  .setting p{margin:0;font-size:14px}
+  .setting small{display:block;color:var(--dim);font-size:12.5px;margin-top:2px}
+  input[type=range]{width:130px;accent-color:var(--brass)}
+  select{
+    background:var(--ground);border:1px solid var(--line);color:var(--pale);
+    padding:8px 10px;border-radius:9px;font:500 14px Inter,sans-serif;
+  }
+  .switch{
+    position:relative;width:44px;height:26px;flex:none;background:var(--line);
+    border-radius:999px;border:0;cursor:pointer;transition:background .15s;
+  }
+  .switch[aria-checked=true]{background:var(--brass)}
+  .switch::after{
+    content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
+    background:var(--pale);transition:transform .15s;
+  }
+  .switch[aria-checked=true]::after{transform:translateX(18px)}
+
+  footer{margin-top:24px;color:var(--dim);font-size:13px;display:flex;justify-content:space-between}
+  :focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){
+    .ringing .pulse{animation:none}
+    .arc{transition:none}
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Ring</h1>
+    <p>a bell on repeat</p>
+  </header>
+
+  <div class="dial" id="dial">
+    <svg viewBox="0 0 320 320" aria-hidden="true">
+      <circle class="pulse" cx="160" cy="160" r="70"></circle>
+      <circle class="pulse" cx="160" cy="160" r="70"></circle>
+      <circle class="track" cx="160" cy="160" r="142"></circle>
+      <circle class="arc" id="arc" cx="160" cy="160" r="142"
+              stroke-dasharray="892.2" stroke-dashoffset="892.2"></circle>
+    </svg>
+    <div class="readout">
+      <div class="time" id="time">10:00</div>
+      <div class="state" id="state">Ready when you are</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <label for="mins">Ring every</label>
+    <div class="row">
+      <input id="mins" type="number" min="0.25" max="240" step="0.25" value="10" />
+      <span class="unit">minutes</span>
+    </div>
+    <div class="presets" id="presets"></div>
+  </div>
+
+  <div class="controls">
+    <button class="primary" id="startBtn">Start ringing</button>
+    <button class="ghost" id="testBtn">Test bell</button>
+  </div>
+
+  <div class="card settings">
+    <div class="setting">
+      <p>Bell<small>Pick a sound</small></p>
+      <select id="tone">
+        <option value="bowl">Singing bowl</option>
+        <option value="chime">Chime</option>
+        <option value="ping">Ping</option>
+      </select>
+    </div>
+    <div class="setting">
+      <p>Volume</p>
+      <input id="vol" type="range" min="0" max="100" value="70" />
+    </div>
+    <div class="setting">
+      <p>Desktop notification<small>Also shows a banner on each ring</small></p>
+      <button class="switch" id="notif" role="switch" aria-checked="false" aria-label="Desktop notification"></button>
+    </div>
+    <div class="setting">
+      <p>Keep screen awake<small>Stops the display sleeping while running</small></p>
+      <button class="switch" id="wake" role="switch" aria-checked="true" aria-label="Keep screen awake"></button>
+    </div>
+  </div>
+
+  <footer>
+    <span id="count">No rings yet</span>
+    <span id="nextAt"></span>
+  </footer>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const minsEl=$('mins'), timeEl=$('time'), stateEl=$('state'), arc=$('arc'),
+      dial=$('dial'), startBtn=$('startBtn'), countEl=$('count'), nextEl=$('nextAt'),
+      volEl=$('vol'), toneEl=$('tone'), notifBtn=$('notif'), wakeBtn=$('wake');
+
+const CIRC = 2 * Math.PI * 142;
+arc.setAttribute('stroke-dasharray', CIRC);
+
+let running=false, intervalMs=6e5, nextTime=0, rings=0, ticker=null, wakeSentinel=null;
+
+/* ---------- saved settings ---------- */
+const store = {
+  get(k, d){ try{ const v=localStorage.getItem('ring:'+k); return v===null?d:JSON.parse(v);}catch{ return d; } },
+  set(k, v){ try{ localStorage.setItem('ring:'+k, JSON.stringify(v)); }catch{} }
+};
+minsEl.value = store.get('mins', 10);
+volEl.value  = store.get('vol', 70);
+toneEl.value = store.get('tone', 'bowl');
+notifBtn.setAttribute('aria-checked', String(store.get('notif', false)));
+wakeBtn.setAttribute('aria-checked', String(store.get('wake', true)));
+
+/* ---------- presets ---------- */
+[1,5,10,15,20,25,30,60].forEach(m=>{
+  const b=document.createElement('button');
+  b.className='chip'; b.type='button'; b.textContent = m+' min';
+  b.onclick=()=>{ minsEl.value=m; syncPresets(); onIntervalChange(); };
+  $('presets').appendChild(b);
+});
+function syncPresets(){
+  [...$('presets').children].forEach(b=>
+    b.setAttribute('aria-pressed', String(parseFloat(b.textContent)===parseFloat(minsEl.value))));
+}
+syncPresets();
+
+/* ---------- audio ---------- */
+let ac;
+function audio(){ ac = ac || new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==='suspended') ac.resume(); return ac; }
+
+function bell(){
+  const c=audio(), t=c.currentTime, gain=volEl.value/100;
+  if(!gain) return;
+  const kind=toneEl.value;
+  const recipes = {
+    bowl:  {partials:[[220,1],[440,.5],[653,.28],[880,.14]], decay:5.5, type:'sine'},
+    chime: {partials:[[880,1],[1320,.45],[1760,.25]],        decay:2.6, type:'sine'},
+    ping:  {partials:[[1568,1],[3136,.2]],                   decay:1.1, type:'triangle'}
+  }[kind];
+  recipes.partials.forEach(([f,amp],i)=>{
+    const o=c.createOscillator(), g=c.createGain();
+    o.type=recipes.type; o.frequency.value=f;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(gain*amp*0.28, t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+recipes.decay*(1-i*0.12));
+    o.connect(g).connect(c.destination);
+    o.start(t); o.stop(t+recipes.decay+0.1);
+  });
+}
+
+/* ---------- ring ---------- */
+function doRing(){
+  bell();
+  rings++;
+  countEl.textContent = rings===1 ? '1 ring so far' : rings+' rings so far';
+  dial.classList.remove('ringing'); void dial.offsetWidth; dial.classList.add('ringing');
+  if(notifBtn.getAttribute('aria-checked')==='true' && Notification?.permission==='granted'){
+    new Notification('Ring', { body: 'Interval up. Next one in '+minsEl.value+' min.', silent:true });
+  }
+}
+
+/* ---------- clock ---------- */
+function fmt(ms){
+  ms=Math.max(0,ms);
+  const s=Math.round(ms/1000);
+  return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+}
+function paint(){
+  const left = running ? nextTime-Date.now() : intervalMs;
+  timeEl.textContent = fmt(left);
+  arc.setAttribute('stroke-dashoffset', CIRC*(running ? Math.max(0,left)/intervalMs : 1));
+  document.title = running ? fmt(left)+' — Ring' : 'Ring — interval chime';
+  if(running){
+    nextEl.textContent = 'Next at '+new Date(nextTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  } else nextEl.textContent='';
+}
+function tick(){
+  if(Date.now() >= nextTime){
+    doRing();
+    nextTime += intervalMs;                       // no drift
+    while(Date.now() >= nextTime) nextTime += intervalMs;  // tab was asleep
+  }
+  paint();
+}
+function onIntervalChange(){
+  const m = Math.min(240, Math.max(0.25, parseFloat(minsEl.value)||10));
+  minsEl.value = m; intervalMs = m*60000; store.set('mins', m);
+  if(running){ nextTime = Date.now()+intervalMs; }
+  paint();
+}
+minsEl.addEventListener('change', ()=>{ onIntervalChange(); syncPresets(); });
+onIntervalChange();
+
+/* ---------- wake lock ---------- */
+async function lock(){
+  if(wakeBtn.getAttribute('aria-checked')!=='true' || !('wakeLock' in navigator)) return;
+  try{ wakeSentinel = await navigator.wakeLock.request('screen'); }catch{}
+}
+function unlock(){ wakeSentinel?.release?.(); wakeSentinel=null; }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && running) lock(); });
+
+/* ---------- start / stop ---------- */
+function start(){
+  audio();
+  running=true; nextTime=Date.now()+intervalMs;
+  startBtn.textContent='Stop';
+  stateEl.textContent='Ringing every '+minsEl.value+' min';
+  ticker=setInterval(tick, 250);
+  lock(); paint();
+}
+function stop(){
+  running=false; clearInterval(ticker); unlock();
+  startBtn.textContent='Start ringing';
+  stateEl.textContent='Stopped';
+  paint();
+}
+startBtn.onclick = ()=> running ? stop() : start();
+$('testBtn').onclick = ()=>{ audio(); bell(); };
+
+/* ---------- toggles ---------- */
+volEl.oninput  = ()=> store.set('vol', +volEl.value);
+toneEl.onchange= ()=> store.set('tone', toneEl.value);
+
+notifBtn.onclick = async ()=>{
+  const on = notifBtn.getAttribute('aria-checked')==='true';
+  if(!on){
+    if(!('Notification' in window)){ stateEl.textContent='This browser has no notifications'; return; }
+    const p = await Notification.requestPermission();
+    if(p!=='granted'){ stateEl.textContent='Notifications are blocked in browser settings'; return; }
+  }
+  notifBtn.setAttribute('aria-checked', String(!on)); store.set('notif', !on);
+};
+wakeBtn.onclick = ()=>{
+  const on = wakeBtn.getAttribute('aria-checked')==='true';
+  wakeBtn.setAttribute('aria-checked', String(!on)); store.set('wake', !on);
+  on ? unlock() : (running && lock());
+};
+
+/* ---------- keys ---------- */
+document.addEventListener('keydown', e=>{
+  if(e.code==='Space' && e.target===document.body){ e.preventDefault(); startBtn.click(); }
+});
+</script>
+</body>
+</html>
