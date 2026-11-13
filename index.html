@@ -3,347 +3,557 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ring — interval chime</title>
-<meta name="description" content="A bell that rings on a set interval." />
+<title>RINGER</title>
+<meta name="description" content="A looping interval bell and a plain countdown timer. Run both at once." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet" />
 <style>
   :root{
-    --ground:#16211F;
-    --ground-2:#1E2C29;
-    --line:#31423E;
-    --pale:#E9EFEA;
-    --dim:#8AA09A;
-    --brass:#D3A64B;
-    --brass-soft:rgba(211,166,75,.18);
-    --radius:14px;
+    --void:#15161f;
+    --panel:#262b44;
+    --sunk:#1b1f33;
+    --line:#3a4466;
+    --line-hi:#5d6a97;
+    --ink:#f4f4f4;
+    --dim:#8b93b8;
+    --gold:#ffcd75;
+    --green:#a7f070;
+    --red:#ef7d57;
+    --shadow:#0b0c13;
+    --notch:6px;
   }
   *{box-sizing:border-box}
-  html,body{height:100%}
+  html{-webkit-text-size-adjust:100%}
   body{
-    margin:0;
-    background:
-      radial-gradient(120% 80% at 50% -10%, #1F302C 0%, var(--ground) 55%) fixed;
-    color:var(--pale);
-    font-family:Inter, system-ui, sans-serif;
-    font-size:16px;
-    line-height:1.5;
-    display:flex;
-    justify-content:center;
-    padding:32px 20px 56px;
+    margin:0;min-height:100%;
+    background:var(--void);
+    background-image:
+      repeating-linear-gradient(0deg,#1b1d28 0 1px,transparent 1px 4px),
+      repeating-linear-gradient(90deg,#191b26 0 1px,transparent 1px 4px);
+    color:var(--ink);
+    font-family:Silkscreen, ui-monospace, monospace;
+    font-size:15px;line-height:1.55;
+    display:flex;justify-content:center;
+    padding:26px 16px 48px;
   }
-  main{width:100%;max-width:520px}
+  main{width:100%;max-width:560px}
+  svg{display:block;width:100%;height:100%;fill:currentColor}
 
-  header{display:flex;align-items:baseline;gap:12px;margin-bottom:28px}
+  /* ---------- header ---------- */
+  header{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+  .mark{width:34px;height:34px;flex:none;color:var(--gold)}
   h1{
-    font-family:Fraunces, Georgia, serif;
-    font-weight:300;
-    font-size:30px;
-    letter-spacing:.01em;
-    margin:0;
+    font-family:'Press Start 2P',monospace;font-size:21px;font-weight:400;
+    margin:0;line-height:1;text-shadow:3px 3px 0 var(--shadow);
   }
-  header p{margin:0;color:var(--dim);font-size:14px}
+  header p{margin:5px 0 0;color:var(--dim);font-size:14px}
 
-  .dial{position:relative;display:grid;place-items:center;margin:0 auto 8px;width:min(320px,80vw);aspect-ratio:1}
-  .dial svg{width:100%;height:100%;transform:rotate(-90deg)}
-  .track{fill:none;stroke:var(--line);stroke-width:2}
-  .arc{fill:none;stroke:var(--brass);stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .25s linear}
-  .pulse{fill:none;stroke:var(--brass);stroke-width:2;opacity:0}
-  .ringing .pulse{animation:out 1.6s ease-out}
-  .ringing .pulse:nth-of-type(2){animation-delay:.28s}
-  @keyframes out{
-    from{r:70px;opacity:.85}
-    to{r:150px;opacity:0}
+  /* ---------- panels ---------- */
+  .panel{
+    background:var(--panel);border:3px solid var(--line);
+    box-shadow:7px 7px 0 var(--shadow);
+    padding:18px;margin-bottom:26px;
   }
-  .readout{position:absolute;text-align:center}
-  .readout .time{
-    font-family:Fraunces, Georgia, serif;
-    font-weight:300;
-    font-variant-numeric:tabular-nums;
-    font-size:clamp(46px,14vw,64px);
-    line-height:1;
+  .panel.gold{--hue:var(--gold)}
+  .panel.green{--hue:var(--green)}
+  .bar-top{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .icon{width:22px;height:22px;flex:none;color:var(--hue)}
+  .bar-top h2{
+    font-family:'Press Start 2P',monospace;font-size:12px;font-weight:400;
+    margin:0;flex:1;letter-spacing:.02em;
   }
-  .readout .state{color:var(--dim);font-size:13px;margin-top:10px;min-height:20px}
+  .led{width:10px;height:10px;flex:none;background:var(--line);box-shadow:0 0 0 2px var(--sunk)}
+  .live .led{background:var(--hue);animation:blink 1.1s steps(2,end) infinite}
+  @keyframes blink{50%{background:var(--line)}}
 
-  .card{
-    background:var(--ground-2);
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    padding:20px;
-    margin-top:22px;
+  .digits{
+    font-family:'Press Start 2P',monospace;
+    font-size:clamp(28px,9vw,44px);line-height:1;
+    text-align:center;padding:6px 0 14px;color:var(--hue);
+    text-shadow:4px 4px 0 var(--shadow);
   }
-  label{display:block;font-size:14px;color:var(--dim);margin-bottom:8px}
-  .row{display:flex;gap:10px;align-items:center}
+  .meter{display:flex;gap:3px;height:16px;margin-bottom:8px}
+  .seg{flex:1;background:var(--sunk);box-shadow:inset 0 0 0 1px #141726}
+  .seg.on{background:var(--hue);box-shadow:none}
+  .note{color:var(--dim);font-size:13px;min-height:20px;display:flex;justify-content:space-between;gap:10px}
+  .note b{color:var(--ink);font-weight:400}
+
+  /* ---------- inputs ---------- */
+  .field{margin-top:18px}
+  .field > span{display:block;color:var(--dim);font-size:13px;margin-bottom:7px}
+  .row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
   input[type=number]{
-    width:100px;background:var(--ground);border:1px solid var(--line);color:var(--pale);
-    font:500 20px Inter,sans-serif;font-variant-numeric:tabular-nums;
-    padding:10px 12px;border-radius:10px;
+    width:78px;background:var(--sunk);border:3px solid var(--line);color:var(--ink);
+    font:700 19px Silkscreen,monospace;padding:8px 9px;text-align:center;
+    -moz-appearance:textfield;
   }
-  .unit{color:var(--dim);font-size:14px}
-  .presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-  .chip{
-    background:transparent;border:1px solid var(--line);color:var(--pale);
-    padding:7px 13px;border-radius:999px;font:500 14px Inter,sans-serif;cursor:pointer;
-  }
-  .chip:hover{border-color:var(--brass)}
-  .chip[aria-pressed=true]{background:var(--brass-soft);border-color:var(--brass);color:var(--brass)}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+  .unit{color:var(--dim);font-size:13px}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
 
-  .controls{display:flex;gap:10px;margin-top:22px}
-  button.primary{
-    flex:1;background:var(--brass);color:#1A1206;border:0;border-radius:12px;
-    padding:15px;font:600 16px Inter,sans-serif;cursor:pointer;
+  /* ---------- buttons ---------- */
+  button{
+    font-family:Silkscreen,monospace;cursor:pointer;border:0;color:var(--ink);
+    background:var(--line);padding:9px 13px;font-size:14px;font-weight:700;
+    clip-path:polygon(
+      var(--notch) 0, calc(100% - var(--notch)) 0, calc(100% - var(--notch)) var(--notch),
+      100% var(--notch), 100% calc(100% - var(--notch)), calc(100% - var(--notch)) calc(100% - var(--notch)),
+      calc(100% - var(--notch)) 100%, var(--notch) 100%, var(--notch) calc(100% - var(--notch)),
+      0 calc(100% - var(--notch)), 0 var(--notch), var(--notch) var(--notch));
   }
-  button.primary:hover{filter:brightness(1.07)}
-  button.ghost{
-    background:transparent;border:1px solid var(--line);color:var(--pale);
-    border-radius:12px;padding:15px 18px;font:500 15px Inter,sans-serif;cursor:pointer;
+  button:hover{background:var(--line-hi)}
+  button[aria-pressed=true]{background:var(--hue,var(--gold));color:var(--void)}
+  .go{
+    width:100%;margin-top:18px;padding:16px;font-size:16px;
+    background:var(--hue);color:var(--void);
   }
-  button.ghost:hover{border-color:var(--brass)}
+  .go:hover{background:var(--hue);filter:brightness(1.12)}
+  .go.stop{background:var(--red);color:var(--void)}
+  .pair{display:flex;gap:10px;margin-top:18px}
+  .pair .go{margin-top:0;flex:1}
+  .pair .alt{background:var(--sunk);box-shadow:inset 0 0 0 3px var(--line);padding:16px 18px;font-size:14px}
+  .pair .alt:hover{background:var(--line)}
 
-  .settings{display:grid;gap:16px;margin-top:22px}
-  .setting{display:flex;justify-content:space-between;align-items:center;gap:16px}
-  .setting p{margin:0;font-size:14px}
-  .setting small{display:block;color:var(--dim);font-size:12.5px;margin-top:2px}
-  input[type=range]{width:130px;accent-color:var(--brass)}
+  /* ---------- settings ---------- */
+  .set{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0;border-bottom:3px solid var(--sunk)}
+  .set:last-child{border-bottom:0;padding-bottom:0}
+  .set p{margin:0;font-size:14px}
+  .set small{display:block;color:var(--dim);font-size:12px;margin-top:1px}
   select{
-    background:var(--ground);border:1px solid var(--line);color:var(--pale);
-    padding:8px 10px;border-radius:9px;font:500 14px Inter,sans-serif;
+    background:var(--sunk);border:3px solid var(--line);color:var(--ink);
+    font:700 14px Silkscreen,monospace;padding:7px 8px;
   }
-  .switch{
-    position:relative;width:44px;height:26px;flex:none;background:var(--line);
-    border-radius:999px;border:0;cursor:pointer;transition:background .15s;
-  }
-  .switch[aria-checked=true]{background:var(--brass)}
-  .switch::after{
-    content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
-    background:var(--pale);transition:transform .15s;
-  }
-  .switch[aria-checked=true]::after{transform:translateX(18px)}
+  input[type=range]{width:120px;accent-color:var(--gold);height:20px}
+  .sw{width:50px;height:26px;background:var(--sunk);box-shadow:inset 0 0 0 3px var(--line);padding:0;flex:none;clip-path:none;position:relative}
+  .sw::after{content:"";position:absolute;top:4px;left:4px;width:18px;height:18px;background:var(--line);transition:transform .08s steps(2,end),background .08s}
+  .sw[aria-checked=true]::after{transform:translateX(24px);background:var(--gold)}
 
-  footer{margin-top:24px;color:var(--dim);font-size:13px;display:flex;justify-content:space-between}
-  :focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+  footer{color:var(--dim);font-size:12.5px;text-align:center;line-height:1.9}
+  kbd{background:var(--sunk);box-shadow:inset 0 0 0 2px var(--line);padding:1px 6px;color:var(--ink)}
+
+  /* ---------- fire ---------- */
+  .fire{animation:shake .42s steps(3,end) 3}
+  @keyframes shake{0%{transform:translateX(0)}33%{transform:translateX(-3px)}66%{transform:translateX(3px)}}
+  .flash{animation:flash .34s steps(2,end) 3}
+  @keyframes flash{50%{border-color:var(--hue);background:#2f365a}}
   @media (prefers-reduced-motion:reduce){
-    .ringing .pulse{animation:none}
-    .arc{transition:none}
+    .fire,.flash,.live .led{animation:none}
+  }
+  @media (max-width:420px){
+    h1{font-size:17px}
+    .pair{flex-wrap:wrap}
+    .pair .alt{flex:1}
   }
 </style>
 </head>
 <body>
 <main>
   <header>
-    <h1>Ring</h1>
-    <p>a bell on repeat</p>
+    <div class="mark" id="mark"></div>
+    <div>
+      <h1>RINGER</h1>
+      <p>a looping bell and a plain countdown</p>
+    </div>
   </header>
 
-  <div class="dial" id="dial">
-    <svg viewBox="0 0 320 320" aria-hidden="true">
-      <circle class="pulse" cx="160" cy="160" r="70"></circle>
-      <circle class="pulse" cx="160" cy="160" r="70"></circle>
-      <circle class="track" cx="160" cy="160" r="142"></circle>
-      <circle class="arc" id="arc" cx="160" cy="160" r="142"
-              stroke-dasharray="892.2" stroke-dashoffset="892.2"></circle>
-    </svg>
-    <div class="readout">
-      <div class="time" id="time">10:00</div>
-      <div class="state" id="state">Ready when you are</div>
+  <!-- ===== INTERVAL ===== -->
+  <section class="panel gold" id="pA">
+    <div class="bar-top">
+      <div class="icon" id="iconA"></div>
+      <h2>INTERVAL BELL</h2>
+      <div class="led"></div>
     </div>
-  </div>
-
-  <div class="card">
-    <label for="mins">Ring every</label>
-    <div class="row">
-      <input id="mins" type="number" min="0.25" max="240" step="0.25" value="10" />
-      <span class="unit">minutes</span>
+    <div class="digits" id="digA">10:00</div>
+    <div class="meter" id="metA"></div>
+    <div class="note">
+      <span id="noteA">idle</span>
+      <span id="ringsA"></span>
     </div>
-    <div class="presets" id="presets"></div>
-  </div>
 
-  <div class="controls">
-    <button class="primary" id="startBtn">Start ringing</button>
-    <button class="ghost" id="testBtn">Test bell</button>
-  </div>
+    <div class="field">
+      <span>ring every</span>
+      <div class="row">
+        <input id="aMin" type="number" min="0.25" max="240" step="0.25" value="10" />
+        <span class="unit">minutes, forever</span>
+      </div>
+      <div class="chips" id="aChips"></div>
+    </div>
+    <button class="go" id="aGo">START BELL</button>
+  </section>
 
-  <div class="card settings">
-    <div class="setting">
-      <p>Bell<small>Pick a sound</small></p>
-      <select id="tone">
-        <option value="bowl">Singing bowl</option>
+  <!-- ===== TIMER ===== -->
+  <section class="panel green" id="pB">
+    <div class="bar-top">
+      <div class="icon" id="iconB"></div>
+      <h2>COUNTDOWN</h2>
+      <div class="led"></div>
+    </div>
+    <div class="digits" id="digB">05:00</div>
+    <div class="meter" id="metB"></div>
+    <div class="note">
+      <span id="noteB">idle</span>
+      <span id="endB"></span>
+    </div>
+
+    <div class="field">
+      <span>count down from</span>
+      <div class="row">
+        <input id="bMin" type="number" min="0" max="999" step="1" value="5" />
+        <span class="unit">min</span>
+        <input id="bSec" type="number" min="0" max="59" step="1" value="0" />
+        <span class="unit">sec</span>
+      </div>
+      <div class="chips" id="bChips"></div>
+    </div>
+    <div class="pair">
+      <button class="go" id="bGo">START TIMER</button>
+      <button class="alt" id="bReset">RESET</button>
+    </div>
+  </section>
+
+  <!-- ===== SETTINGS ===== -->
+  <section class="panel">
+    <div class="set">
+      <p>Bell sound<small>used by the interval</small></p>
+      <select id="voice">
+        <option value="blip">Blip</option>
         <option value="chime">Chime</option>
-        <option value="ping">Ping</option>
+        <option value="alarm">Alarm</option>
       </select>
     </div>
-    <div class="setting">
+    <div class="set">
       <p>Volume</p>
-      <input id="vol" type="range" min="0" max="100" value="70" />
+      <div class="row">
+        <input id="vol" type="range" min="0" max="100" value="70" />
+        <button id="test">TEST</button>
+      </div>
     </div>
-    <div class="setting">
-      <p>Desktop notification<small>Also shows a banner on each ring</small></p>
-      <button class="switch" id="notif" role="switch" aria-checked="false" aria-label="Desktop notification"></button>
+    <div class="set">
+      <p>Notifications<small>banner on every ring</small></p>
+      <button class="sw" id="notif" role="switch" aria-checked="false" aria-label="Notifications"></button>
     </div>
-    <div class="setting">
-      <p>Keep screen awake<small>Stops the display sleeping while running</small></p>
-      <button class="switch" id="wake" role="switch" aria-checked="true" aria-label="Keep screen awake"></button>
+    <div class="set">
+      <p>Keep screen awake<small>while anything is running</small></p>
+      <button class="sw" id="wake" role="switch" aria-checked="true" aria-label="Keep screen awake"></button>
     </div>
-  </div>
+  </section>
 
   <footer>
-    <span id="count">No rings yet</span>
-    <span id="nextAt"></span>
+    <kbd>space</kbd> interval &nbsp;·&nbsp; <kbd>t</kbd> timer &nbsp;·&nbsp; <kbd>r</kbd> reset timer<br />
+    both can run at the same time
   </footer>
 </main>
 
 <script>
 const $ = id => document.getElementById(id);
-const minsEl=$('mins'), timeEl=$('time'), stateEl=$('state'), arc=$('arc'),
-      dial=$('dial'), startBtn=$('startBtn'), countEl=$('count'), nextEl=$('nextAt'),
-      volEl=$('vol'), toneEl=$('tone'), notifBtn=$('notif'), wakeBtn=$('wake');
 
-const CIRC = 2 * Math.PI * 142;
-arc.setAttribute('stroke-dasharray', CIRC);
-
-let running=false, intervalMs=6e5, nextTime=0, rings=0, ticker=null, wakeSentinel=null;
-
-/* ---------- saved settings ---------- */
-const store = {
-  get(k, d){ try{ const v=localStorage.getItem('ring:'+k); return v===null?d:JSON.parse(v);}catch{ return d; } },
-  set(k, v){ try{ localStorage.setItem('ring:'+k, JSON.stringify(v)); }catch{} }
+/* ---------------- pixel sprites ---------------- */
+const SPRITES = {
+  bell:[
+    "................",
+    ".......##.......",
+    "......####......",
+    ".....######.....",
+    "....########....",
+    "....########....",
+    "...##########...",
+    "...##########...",
+    "..############..",
+    "..############..",
+    ".##############.",
+    "################",
+    "................",
+    "......####......",
+    ".......##.......",
+    "................"],
+  glass:[
+    "................",
+    ".##############.",
+    ".#............#.",
+    "..#..........#..",
+    "..#...####...#..",
+    "...#..####..#...",
+    "....#.####.#....",
+    ".....#.##.#.....",
+    ".....#.##.#.....",
+    "....#......#....",
+    "...#........#...",
+    "..#....##....#..",
+    "..#..######..#..",
+    ".#..########..#.",
+    ".##############.",
+    "................"]
 };
-minsEl.value = store.get('mins', 10);
-volEl.value  = store.get('vol', 70);
-toneEl.value = store.get('tone', 'bowl');
-notifBtn.setAttribute('aria-checked', String(store.get('notif', false)));
-wakeBtn.setAttribute('aria-checked', String(store.get('wake', true)));
-
-/* ---------- presets ---------- */
-[1,5,10,15,20,25,30,60].forEach(m=>{
-  const b=document.createElement('button');
-  b.className='chip'; b.type='button'; b.textContent = m+' min';
-  b.onclick=()=>{ minsEl.value=m; syncPresets(); onIntervalChange(); };
-  $('presets').appendChild(b);
-});
-function syncPresets(){
-  [...$('presets').children].forEach(b=>
-    b.setAttribute('aria-pressed', String(parseFloat(b.textContent)===parseFloat(minsEl.value))));
-}
-syncPresets();
-
-/* ---------- audio ---------- */
-let ac;
-function audio(){ ac = ac || new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==='suspended') ac.resume(); return ac; }
-
-function bell(){
-  const c=audio(), t=c.currentTime, gain=volEl.value/100;
-  if(!gain) return;
-  const kind=toneEl.value;
-  const recipes = {
-    bowl:  {partials:[[220,1],[440,.5],[653,.28],[880,.14]], decay:5.5, type:'sine'},
-    chime: {partials:[[880,1],[1320,.45],[1760,.25]],        decay:2.6, type:'sine'},
-    ping:  {partials:[[1568,1],[3136,.2]],                   decay:1.1, type:'triangle'}
-  }[kind];
-  recipes.partials.forEach(([f,amp],i)=>{
-    const o=c.createOscillator(), g=c.createGain();
-    o.type=recipes.type; o.frequency.value=f;
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(gain*amp*0.28, t+0.012);
-    g.gain.exponentialRampToValueAtTime(0.0001, t+recipes.decay*(1-i*0.12));
-    o.connect(g).connect(c.destination);
-    o.start(t); o.stop(t+recipes.decay+0.1);
+function paintSprite(el, rows){
+  const n = rows.length;
+  let s = `<svg viewBox="0 0 ${n} ${n}" shape-rendering="crispEdges" aria-hidden="true">`;
+  rows.forEach((row,y)=>{
+    let x=0;
+    while(x < row.length){
+      if(row[x]==='#'){
+        let w=0; while(row[x+w]==='#') w++;
+        s += `<rect x="${x}" y="${y}" width="${w}" height="1"/>`;
+        x+=w;
+      } else x++;
+    }
   });
+  el.innerHTML = s + '</svg>';
+}
+paintSprite($('mark'), SPRITES.bell);
+paintSprite($('iconA'), SPRITES.bell);
+paintSprite($('iconB'), SPRITES.glass);
+
+/* ---------------- meters ---------------- */
+const SEGS = 24;
+function buildMeter(el){
+  el.innerHTML = Array.from({length:SEGS}, ()=>'<i class="seg"></i>').join('');
+  return [...el.children];
+}
+const segA = buildMeter($('metA')), segB = buildMeter($('metB'));
+function setMeter(segs, frac){
+  const on = Math.round(Math.max(0, Math.min(1, frac)) * SEGS);
+  segs.forEach((s,i)=> s.classList.toggle('on', i < on));
 }
 
-/* ---------- ring ---------- */
-function doRing(){
-  bell();
-  rings++;
-  countEl.textContent = rings===1 ? '1 ring so far' : rings+' rings so far';
-  dial.classList.remove('ringing'); void dial.offsetWidth; dial.classList.add('ringing');
-  if(notifBtn.getAttribute('aria-checked')==='true' && Notification?.permission==='granted'){
-    new Notification('Ring', { body: 'Interval up. Next one in '+minsEl.value+' min.', silent:true });
+/* ---------------- saved settings ---------------- */
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem('ringer:'+k); return v===null?d:JSON.parse(v); }catch{ return d; } },
+  set(k,v){ try{ localStorage.setItem('ringer:'+k, JSON.stringify(v)); }catch{} }
+};
+$('aMin').value = store.get('aMin', 10);
+$('bMin').value = store.get('bMin', 5);
+$('bSec').value = store.get('bSec', 0);
+$('vol').value  = store.get('vol', 70);
+$('voice').value= store.get('voice', 'blip');
+$('notif').setAttribute('aria-checked', String(store.get('notif', false)));
+$('wake').setAttribute('aria-checked',  String(store.get('wake', true)));
+
+/* ---------------- chiptune audio ---------------- */
+let ac;
+function audio(){
+  ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+  if(ac.state === 'suspended') ac.resume();
+  return ac;
+}
+/* each note: [freq, startOffset, duration, waveform] */
+const VOICES = {
+  blip:  [[1047,0,.09,'square'],[1397,.09,.15,'square']],
+  chime: [[1568,0,.45,'triangle'],[2093,.05,.55,'triangle'],[1047,.02,.6,'triangle']],
+  alarm: [[932,0,.1,'square'],[932,.19,.1,'square'],[932,.38,.16,'square']]
+};
+const DONE = [[784,0,.1,'square'],[988,.1,.1,'square'],[1175,.2,.1,'square'],[1568,.3,.4,'square']];
+
+function play(seq, scale=1){
+  const c = audio(), t0 = c.currentTime + 0.02, peak = ($('vol').value/100) * 0.2 * scale;
+  if(peak <= 0) return;
+  for(const [f, at, dur, type] of seq){
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = type || 'square';
+    o.frequency.setValueAtTime(f, t0+at);
+    g.gain.setValueAtTime(0, t0+at);
+    g.gain.linearRampToValueAtTime(peak, t0+at+0.006);
+    g.gain.setValueAtTime(peak, t0+at+dur*0.55);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+at+dur);
+    o.connect(g).connect(c.destination);
+    o.start(t0+at); o.stop(t0+at+dur+0.03);
   }
 }
 
-/* ---------- clock ---------- */
+/* ---------------- state ---------------- */
+const A = { on:false, period:600000, next:0, rings:0 };
+const B = { on:false, total:300000, left:300000, end:0, done:false };
+
 function fmt(ms){
-  ms=Math.max(0,ms);
-  const s=Math.round(ms/1000);
-  return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+  const s = Math.max(0, Math.round(ms/1000));
+  return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
 }
+function clock(ts){
+  return new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+function notify(title, body){
+  if($('notif').getAttribute('aria-checked') === 'true' && window.Notification?.permission === 'granted'){
+    new Notification(title, {body, silent:true});
+  }
+}
+function hit(panel){
+  panel.classList.remove('flash'); void panel.offsetWidth; panel.classList.add('flash');
+  const icon = panel.querySelector('.icon');
+  icon.classList.remove('fire'); void icon.offsetWidth; icon.classList.add('fire');
+}
+
+/* ---------------- interval ---------------- */
+[1,5,10,15,20,25,30,60].forEach(m=>{
+  const b = document.createElement('button');
+  b.textContent = m + 'm';
+  b.onclick = ()=>{ $('aMin').value = m; readA(); };
+  $('aChips').appendChild(b);
+});
+function syncChipsA(){
+  [...$('aChips').children].forEach(b=>
+    b.setAttribute('aria-pressed', String(parseFloat(b.textContent) === parseFloat($('aMin').value))));
+}
+function readA(){
+  const m = Math.min(240, Math.max(0.25, parseFloat($('aMin').value) || 10));
+  $('aMin').value = m; A.period = m*60000; store.set('aMin', m);
+  if(A.on) A.next = Date.now() + A.period;
+  syncChipsA(); paint();
+}
+$('aMin').addEventListener('change', readA);
+
+function startA(){
+  audio(); A.on = true; A.next = Date.now() + A.period;
+  $('aGo').textContent = 'STOP BELL'; $('aGo').classList.add('stop');
+  $('pA').classList.add('live'); lock(); paint();
+}
+function stopA(){
+  A.on = false;
+  $('aGo').textContent = 'START BELL'; $('aGo').classList.remove('stop');
+  $('pA').classList.remove('live'); maybeUnlock(); paint();
+}
+$('aGo').onclick = ()=> A.on ? stopA() : startA();
+
+function ringA(){
+  play(VOICES[$('voice').value]);
+  A.rings++;
+  hit($('pA'));
+  notify('Interval bell', `Ring ${A.rings}. Next in ${$('aMin').value} min.`);
+}
+
+/* ---------------- countdown ---------------- */
+[1,3,5,10,15,25,45].forEach(m=>{
+  const b = document.createElement('button');
+  b.textContent = m + 'm';
+  b.onclick = ()=>{ $('bMin').value = m; $('bSec').value = 0; resetB(); };
+  $('bChips').appendChild(b);
+});
+function syncChipsB(){
+  [...$('bChips').children].forEach(b=>
+    b.setAttribute('aria-pressed', String(
+      parseFloat(b.textContent) === parseFloat($('bMin').value) && +$('bSec').value === 0)));
+}
+function readB(){
+  const m = Math.min(999, Math.max(0, Math.floor(+$('bMin').value) || 0));
+  const s = Math.min(59,  Math.max(0, Math.floor(+$('bSec').value) || 0));
+  $('bMin').value = m; $('bSec').value = s;
+  store.set('bMin', m); store.set('bSec', s);
+  B.total = Math.max(1000, (m*60 + s) * 1000);
+  syncChipsB();
+}
+function resetB(){
+  if(B.on){ B.on = false; $('pB').classList.remove('live'); maybeUnlock(); }
+  readB(); B.left = B.total; B.done = false;
+  $('bGo').textContent = 'START TIMER'; $('bGo').classList.remove('stop');
+  $('noteB').textContent = 'idle';
+  paint();
+}
+$('bMin').addEventListener('change', resetB);
+$('bSec').addEventListener('change', resetB);
+$('bReset').onclick = resetB;
+
+function startB(){
+  audio();
+  if(B.done || B.left <= 0){ readB(); B.left = B.total; B.done = false; }
+  B.on = true; B.end = Date.now() + B.left;
+  $('bGo').textContent = 'PAUSE'; $('bGo').classList.add('stop');
+  $('pB').classList.add('live'); lock(); paint();
+}
+function pauseB(){
+  B.left = Math.max(0, B.end - Date.now()); B.on = false;
+  $('bGo').textContent = 'RESUME'; $('bGo').classList.remove('stop');
+  $('pB').classList.remove('live'); maybeUnlock(); paint();
+}
+$('bGo').onclick = ()=> B.on ? pauseB() : startB();
+
+function doneB(){
+  B.on = false; B.left = 0; B.done = true;
+  $('bGo').textContent = 'START TIMER'; $('bGo').classList.remove('stop');
+  $('pB').classList.remove('live');
+  play(DONE, 1.1); hit($('pB'));
+  notify('Timer finished', `${$('bMin').value}m ${$('bSec').value}s is up.`);
+  maybeUnlock();
+}
+
+/* ---------------- shared tick ---------------- */
 function paint(){
-  const left = running ? nextTime-Date.now() : intervalMs;
-  timeEl.textContent = fmt(left);
-  arc.setAttribute('stroke-dashoffset', CIRC*(running ? Math.max(0,left)/intervalMs : 1));
-  document.title = running ? fmt(left)+' — Ring' : 'Ring — interval chime';
-  if(running){
-    nextEl.textContent = 'Next at '+new Date(nextTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-  } else nextEl.textContent='';
+  /* interval */
+  const leftA = A.on ? A.next - Date.now() : A.period;
+  $('digA').textContent = fmt(leftA);
+  setMeter(segA, A.on ? leftA / A.period : 1);
+  $('noteA').textContent = A.on ? 'next at ' + clock(A.next) : 'idle';
+  $('ringsA').innerHTML = A.rings ? `<b>${A.rings}</b> rings` : '';
+
+  /* countdown */
+  const leftB = B.on ? B.end - Date.now() : B.left;
+  $('digB').textContent = fmt(leftB);
+  setMeter(segB, B.total ? leftB / B.total : 0);
+  $('endB').textContent = B.on ? 'ends ' + clock(B.end) : '';
+  if(B.done) $('noteB').textContent = 'finished';
+  else if(B.on) $('noteB').textContent = 'running';
+  else if(B.left < B.total) $('noteB').textContent = 'paused';
+
+  /* tab title: timer wins, interval second */
+  document.title = B.on ? fmt(leftB) + ' timer'
+                 : A.on ? fmt(leftA) + ' bell'
+                 : 'RINGER';
 }
 function tick(){
-  if(Date.now() >= nextTime){
-    doRing();
-    nextTime += intervalMs;                       // no drift
-    while(Date.now() >= nextTime) nextTime += intervalMs;  // tab was asleep
+  const now = Date.now();
+  if(A.on && now >= A.next){
+    ringA();
+    A.next += A.period;
+    while(now >= A.next) A.next += A.period;   /* tab was throttled */
   }
+  if(B.on && now >= B.end) doneB();
   paint();
 }
-function onIntervalChange(){
-  const m = Math.min(240, Math.max(0.25, parseFloat(minsEl.value)||10));
-  minsEl.value = m; intervalMs = m*60000; store.set('mins', m);
-  if(running){ nextTime = Date.now()+intervalMs; }
-  paint();
-}
-minsEl.addEventListener('change', ()=>{ onIntervalChange(); syncPresets(); });
-onIntervalChange();
+setInterval(tick, 200);
 
-/* ---------- wake lock ---------- */
+/* ---------------- wake lock ---------------- */
+let sentinel = null;
 async function lock(){
-  if(wakeBtn.getAttribute('aria-checked')!=='true' || !('wakeLock' in navigator)) return;
-  try{ wakeSentinel = await navigator.wakeLock.request('screen'); }catch{}
+  if($('wake').getAttribute('aria-checked') !== 'true' || !('wakeLock' in navigator) || sentinel) return;
+  try{ sentinel = await navigator.wakeLock.request('screen');
+       sentinel.addEventListener('release', ()=> sentinel = null); }catch{}
 }
-function unlock(){ wakeSentinel?.release?.(); wakeSentinel=null; }
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && running) lock(); });
-
-/* ---------- start / stop ---------- */
-function start(){
-  audio();
-  running=true; nextTime=Date.now()+intervalMs;
-  startBtn.textContent='Stop';
-  stateEl.textContent='Ringing every '+minsEl.value+' min';
-  ticker=setInterval(tick, 250);
-  lock(); paint();
-}
-function stop(){
-  running=false; clearInterval(ticker); unlock();
-  startBtn.textContent='Start ringing';
-  stateEl.textContent='Stopped';
-  paint();
-}
-startBtn.onclick = ()=> running ? stop() : start();
-$('testBtn').onclick = ()=>{ audio(); bell(); };
-
-/* ---------- toggles ---------- */
-volEl.oninput  = ()=> store.set('vol', +volEl.value);
-toneEl.onchange= ()=> store.set('tone', toneEl.value);
-
-notifBtn.onclick = async ()=>{
-  const on = notifBtn.getAttribute('aria-checked')==='true';
-  if(!on){
-    if(!('Notification' in window)){ stateEl.textContent='This browser has no notifications'; return; }
-    const p = await Notification.requestPermission();
-    if(p!=='granted'){ stateEl.textContent='Notifications are blocked in browser settings'; return; }
-  }
-  notifBtn.setAttribute('aria-checked', String(!on)); store.set('notif', !on);
-};
-wakeBtn.onclick = ()=>{
-  const on = wakeBtn.getAttribute('aria-checked')==='true';
-  wakeBtn.setAttribute('aria-checked', String(!on)); store.set('wake', !on);
-  on ? unlock() : (running && lock());
-};
-
-/* ---------- keys ---------- */
-document.addEventListener('keydown', e=>{
-  if(e.code==='Space' && e.target===document.body){ e.preventDefault(); startBtn.click(); }
+function maybeUnlock(){ if(!A.on && !B.on){ sentinel?.release?.(); sentinel = null; } }
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible' && (A.on || B.on)) lock();
 });
+
+/* ---------------- settings ---------------- */
+$('vol').oninput = ()=> store.set('vol', +$('vol').value);
+$('voice').onchange = ()=>{ store.set('voice', $('voice').value); play(VOICES[$('voice').value]); };
+$('test').onclick = ()=>{ audio(); play(VOICES[$('voice').value]); };
+
+$('notif').onclick = async ()=>{
+  const on = $('notif').getAttribute('aria-checked') === 'true';
+  if(!on){
+    if(!('Notification' in window)){ $('noteA').textContent = 'no notifications here'; return; }
+    if(await Notification.requestPermission() !== 'granted'){
+      $('noteA').textContent = 'blocked in browser settings'; return;
+    }
+  }
+  $('notif').setAttribute('aria-checked', String(!on)); store.set('notif', !on);
+};
+$('wake').onclick = ()=>{
+  const on = $('wake').getAttribute('aria-checked') === 'true';
+  $('wake').setAttribute('aria-checked', String(!on)); store.set('wake', !on);
+  if(on){ sentinel?.release?.(); sentinel = null; } else if(A.on || B.on) lock();
+};
+
+/* ---------------- keys ---------------- */
+document.addEventListener('keydown', e=>{
+  if(e.target !== document.body) return;
+  if(e.code === 'Space'){ e.preventDefault(); $('aGo').click(); }
+  else if(e.key === 't'){ $('bGo').click(); }
+  else if(e.key === 'r'){ resetB(); }
+});
+
+/* ---------------- boot ---------------- */
+readA(); readB(); B.left = B.total; paint();
 </script>
 </body>
 </html>
